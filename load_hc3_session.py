@@ -28,6 +28,7 @@ def load_hc3_session_full(
 
     if verbose:
         print(f"正在加载: {topdir}/{session}")
+        print(f"{tar_path}")
 
     data = {
         'topdir': topdir,
@@ -40,12 +41,18 @@ def load_hc3_session_full(
         'lfp_sampling_rate': 1250  # .eeg 默认 1.25kHz
     }
 
-    with tarfile.open(tar_path, 'r:gz') as tar:
+    with tarfile.open(tar_path, 'r') as tar:
         members = {m.name: m for m in tar.getmembers()}
+        # 检查是否读取到了压缩包里所有的文件
+        # for name in sorted(members.keys()):
+        #     print(f"- {name} (类型: {'目录' if members[name].isdir() else '文件'})")
+        # print(f"member文件个数：{len(members)}")
+
 
         # ====================== 1. 加载 XML 配置信息 ======================
         if load_xml:
             xml_files = [name for name in members if name.endswith('.xml')]
+            print(f"xml_files: {xml_files}")
             if xml_files:
                 with tar.extractfile(xml_files[0]) as f:
                     tree = ET.parse(f)
@@ -65,7 +72,8 @@ def load_hc3_session_full(
                     if verbose and data['xml_info'] is not None:
                         print(f"✓ XML 配置已加载")
                         print(f"✓ channel:{data['xml_info']['n_channels']} | sampling_rate:{data['xml_info']['sampling_rate']}")
-
+            else :
+                print(f"{xml_files} don't found!")
 
         # ====================== 2. 加载位置信息 (.whl) ======================
         if load_position:
@@ -80,6 +88,8 @@ def load_hc3_session_full(
                     data['position'] = pos
                     if verbose:
                         print(f"✓ 位置数据: {len(pos)} 个时间点")
+            else :
+                print(f"{whl_files} don't found!")
 
         # ====================== 3. 加载 Spike 数据 ======================
         if load_spikes:
@@ -134,9 +144,11 @@ def load_hc3_session_full(
                     data['lfp'] = {
                         'data': lfp,
                         'sampling_rate': data['lfp_sampling_rate'],
+                        'times_sec': np.arange(lfp.shape[1]) / data['lfp_sampling_rate']
                     }
                 if verbose:
                     print(f"✓ LFP 数据已加载: {lfp.shape[0]} 通道, {lfp.shape[1]} 个采样点，采样率 {data['lfp_sampling_rate']}")
+                    print(f"✓ LFP {data['lfp']['times_sec'][-1]:.2f}秒")
 
     if verbose:
         total_spikes = sum(u['n_spikes'] for u in data['spikes'].values())
@@ -144,20 +156,21 @@ def load_hc3_session_full(
 
     return data
 
-BASE_PATH = r"E:"   # ← 修改为你的数据集路径
+if __name__ == '__main__':
+    BASE_PATH = "E:"   # ← 修改为你的数据集路径
 
-data = load_hc3_session_full(
-    base_path=BASE_PATH,
-    topdir="ec012ec",
-    session="ec012ec.189",
-    load_spikes=True,
-    load_lfp=True,
-    load_position=True,
-    verbose=True
-)
+    data = load_hc3_session_full(
+        base_path=BASE_PATH,
+        topdir="ec012ec",
+        session="ec012ec.189",
+        load_spikes=True,
+        load_lfp=True,
+        load_position=True,
+        verbose=True
+    )
 
-# 查看结果
-print(f"\n神经元数量: {len(data['spikes'])}")
-print(f"位置数据形状: {data['position'].shape if data['position'] is not None else None}")
-if data['lfp']:
-    print(f"LFP 形状: {data['lfp']['data'].shape}")
+    # 查看结果
+    print(f"\n神经元数量: {len(data['spikes'])}")
+    print(f"位置数据形状: {data['position'].shape if data['position'] is not None else None}")
+    if data['lfp']:
+        print(f"LFP 形状: {data['lfp']['data'].shape}")
