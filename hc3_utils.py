@@ -10,7 +10,6 @@ from load_hc3_session import load_hc3_session_full
 
 
 # ====================== 你的原函数（保持不变）======================
-# ...（把你原来的 load_hc3_session_full 函数粘贴在这里）...
 
 def discover_all_sessions(base_path: str) -> List[Dict]:
     """
@@ -82,7 +81,7 @@ def load_all_sessions(
 
 # ====================== 使用示例 ======================
 if __name__ == '__main__':
-    BASE_PATH = "E:"  # ← 修改为你的数据集路径
+    BASE_PATH = "E:/crcns_hc3"  # ← 修改为你的数据集路径
 
     # 方式1：生成器方式（推荐，节省内存）
     print("开始批量加载...")
@@ -99,7 +98,7 @@ if __name__ == '__main__':
         n_units = len(data['spikes'])
         total_units += n_units
 
-        print(f"[{session_count:3d}] {data['topdir']}/{data['session']:15s} "
+        print(f"\n[{session_count:03d}] {data['topdir']}/{data['session']:15s} "
               f"→ {n_units:3d} units, "
               f"position: {len(data['position']) if data['position'] is not None else 0}")
 

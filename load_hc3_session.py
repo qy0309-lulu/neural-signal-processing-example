@@ -28,7 +28,7 @@ def load_hc3_session_full(
 
     if verbose:
         print(f"正在加载: {topdir}/{session}")
-        print(f"{tar_path}")
+        # print(f"{tar_path}")
 
     data = {
         'topdir': topdir,
@@ -52,7 +52,7 @@ def load_hc3_session_full(
         # ====================== 1. 加载 XML 配置信息 ======================
         if load_xml:
             xml_files = [name for name in members if name.endswith('.xml')]
-            print(f"xml_files: {xml_files}")
+
             if xml_files:
                 with tar.extractfile(xml_files[0]) as f:
                     tree = ET.parse(f)
@@ -157,11 +157,11 @@ def load_hc3_session_full(
     return data
 
 if __name__ == '__main__':
-    BASE_PATH = "E:"   # ← 修改为你的数据集路径
+    BASE_PATH = "E:/crcns_hc3"   # ← 修改为你的数据集路径
 
     data = load_hc3_session_full(
         base_path=BASE_PATH,
-        topdir="ec012ec",
+        topdir="ec012ec.11",
         session="ec012ec.189",
         load_spikes=True,
         load_lfp=True,
