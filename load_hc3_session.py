@@ -1,3 +1,4 @@
+import os
 import tarfile
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ def load_hc3_session_full(
         load_lfp: bool = True,
         load_position: bool = True,
         load_xml: bool = True,
+        save_lfp: bool = True,
         verbose: bool = True
 ) -> Dict:
     """
@@ -41,7 +43,7 @@ def load_hc3_session_full(
         'lfp_sampling_rate': 1250  # .eeg 默认 1.25kHz
     }
 
-    with tarfile.open(tar_path, 'r') as tar:
+    with tarfile.open(tar_path, 'r:gz') as tar:
         members = {m.name: m for m in tar.getmembers()}
         # 检查是否读取到了压缩包里所有的文件
         # for name in sorted(members.keys()):
@@ -148,13 +150,24 @@ def load_hc3_session_full(
                     }
                 if verbose:
                     print(f"✓ LFP 数据已加载: {lfp.shape[0]} 通道, {lfp.shape[1]} 个采样点，采样率 {data['lfp_sampling_rate']}")
+                    # print(f"LFP shape:{lfp.shape}, max-{lfp.max()}--min{lfp.min()}")
                     print(f"✓ LFP {data['lfp']['times_sec'][-1]:.2f}秒")
 
     if verbose:
         total_spikes = sum(u['n_spikes'] for u in data['spikes'].values())
         print(f"加载完成！总 Spike 数量: {total_spikes:,}")
 
+    if save_lfp:
+        save_lfp_npy(save_dir=base_path/topdir/session, save_name=session, data=data['lfp']['data'])
+
     return data
+
+def save_lfp_npy(save_dir, save_name, data:np.ndarray):
+    save_path = os.path.join(save_dir, save_name+".npy")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    np.save(save_path, data)
+    print(f"Saved lfp at {save_path}")
 
 if __name__ == '__main__':
     BASE_PATH = "E:/crcns_hc3"   # ← 修改为你的数据集路径
@@ -162,12 +175,14 @@ if __name__ == '__main__':
     data = load_hc3_session_full(
         base_path=BASE_PATH,
         topdir="ec012ec.11",
-        session="ec012ec.189",
+        session="ec012ec.188",
         load_spikes=True,
         load_lfp=True,
         load_position=True,
+        save_lfp=True, # 加载lfp数据保存为.npy
         verbose=True
     )
+
 
     # 查看结果
     print(f"\n神经元数量: {len(data['spikes'])}")
