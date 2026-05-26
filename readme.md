@@ -35,6 +35,7 @@ Data source: [https://crcns.org/data-sets/hc/hc-3](https://crcns.org/data-sets/h
 
 ## Project Structure
 
+```text
 ├─fea_extract
 │     cal_speed_whl.py              # calculate speed from .whl file
 │     feature_utils_cellType.py     # utility functions
@@ -60,3 +61,4 @@ Data source: [https://crcns.org/data-sets/hc/hc-3](https://crcns.org/data-sets/h
 └─pre_process
        feature_utils_spike.py       # utility functions for spike extraction
        load_one_session.py          # load session data, view basic info (neuron count, channel count, sampling time, etc.)
+```
