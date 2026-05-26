@@ -47,59 +47,59 @@ def compute_psd(signal, fs, nperseg=2048):
     return f, pxx
 
 # 三图对比
-# # ======================
-# # 4. 三图对比：PSD | Morlet | STFT
-# # ======================
-# for name, (f_low, f_high) in BANDS.items():
-#     print(f"\n正在分析 → {name} ({f_low}-{f_high} Hz)")
-#
-#     # 计算数据
-#     f_psd, pxx = compute_psd(lfp, fs)
-#     f_wav, t_wav, p_wav = compute_morlet_wavelet(lfp, fs, f_low, f_high)
-#     f_stft, t_stft, p_stft = compute_stft(lfp, fs)
-#
-#     # 开始绘图：1行3列
-#     fig, axes = plt.subplots(1, 3, figsize=(18, 4))
-#
-#     # ---------- 子图1：PSD ----------
-#     ax = axes[0]
-#     ax.plot(f_psd, 10 * np.log10(pxx), color='#2a5a9b', linewidth=1)
-#     ax.set_title(f'{name} - PSD 功率谱')
-#     ax.set_xlabel('频率 (Hz)')
-#     ax.set_ylabel('功率 (dB/Hz)')
-#     ax.set_xlim(0, f_high + 30)
-#     ax.grid(alpha=0.3)
-#
-#     # ---------- 子图2：Morlet 小波时频图 ----------
-#     ax = axes[1]
-#     vmin, vmax = np.percentile(p_wav, [5, 95])
-#     im = ax.imshow(p_wav,
-#                    aspect='auto', origin='lower',
-#                    extent=[t_wav.min(), t_wav.max(), f_wav.min(), f_wav.max()],
-#                    cmap='viridis', vmin=vmin, vmax=vmax)
-#     ax.set_title(f'{name} - Morlet 小波时频图')
-#     ax.set_xlabel('时间 (s)')
-#     ax.set_ylabel('频率 (Hz)')
-#     ax.set_ylim(f_low, f_high)
-#     plt.colorbar(im, ax=ax, shrink=0.8)
-#
-#     # ---------- 子图3：STFT 时频图 ----------
-#     ax = axes[2]
-#     vmin, vmax = np.percentile(p_stft, [5, 95])
-#     im = ax.imshow(p_stft,
-#                    aspect='auto', origin='lower',
-#                    extent=[t_stft.min(), t_stft.max(), f_stft.min(), f_stft.max()],
-#                    cmap='viridis', vmin=vmin, vmax=vmax)
-#     ax.set_title(f'{name} - STFT 时频图')
-#     ax.set_xlabel('时间 (s)')
-#     ax.set_ylim(f_low, f_high)
-#     plt.colorbar(im, ax=ax, shrink=0.8)
-#
-#     plt.tight_layout()
-#     plt.savefig(f'figures/{name}_2.png')
-#     plt.close()
-#
-# print("\n✅ 全部分析完成：Theta / Gamma / Ripples")
+# ======================
+# 4. 三图对比：PSD | Morlet | STFT
+# ======================
+for name, (f_low, f_high) in BANDS.items():
+    print(f"\n正在分析 → {name} ({f_low}-{f_high} Hz)")
+
+    # 计算数据
+    f_psd, pxx = compute_psd(lfp, fs)
+    f_wav, t_wav, p_wav = compute_morlet_wavelet(lfp, fs, f_low, f_high)
+    f_stft, t_stft, p_stft = compute_stft(lfp, fs)
+
+    # 开始绘图：1行3列
+    fig, axes = plt.subplots(1, 3, figsize=(18, 4))
+
+    # ---------- 子图1：PSD ----------
+    ax = axes[0]
+    ax.plot(f_psd, 10 * np.log10(pxx), color='#2a5a9b', linewidth=1)
+    ax.set_title(f'{name} - PSD 功率谱')
+    ax.set_xlabel('频率 (Hz)')
+    ax.set_ylabel('功率 (dB/Hz)')
+    ax.set_xlim(0, f_high + 30)
+    ax.grid(alpha=0.3)
+
+    # ---------- 子图2：Morlet 小波时频图 ----------
+    ax = axes[1]
+    vmin, vmax = np.percentile(p_wav, [5, 95])
+    im = ax.imshow(p_wav,
+                   aspect='auto', origin='lower',
+                   extent=[t_wav.min(), t_wav.max(), f_wav.min(), f_wav.max()],
+                   cmap='viridis', vmin=vmin, vmax=vmax)
+    ax.set_title(f'{name} - Morlet 小波时频图')
+    ax.set_xlabel('时间 (s)')
+    ax.set_ylabel('频率 (Hz)')
+    ax.set_ylim(f_low, f_high)
+    plt.colorbar(im, ax=ax, shrink=0.8)
+
+    # ---------- 子图3：STFT 时频图 ----------
+    ax = axes[2]
+    vmin, vmax = np.percentile(p_stft, [5, 95])
+    im = ax.imshow(p_stft,
+                   aspect='auto', origin='lower',
+                   extent=[t_stft.min(), t_stft.max(), f_stft.min(), f_stft.max()],
+                   cmap='viridis', vmin=vmin, vmax=vmax)
+    ax.set_title(f'{name} - STFT 时频图')
+    ax.set_xlabel('时间 (s)')
+    ax.set_ylim(f_low, f_high)
+    plt.colorbar(im, ax=ax, shrink=0.8)
+
+    plt.tight_layout()
+    plt.savefig(f'figures/{name}_2.png')
+    plt.close()
+
+print("\n✅ 全部分析完成：Theta / Gamma / Ripples")
 
 import numpy as np
 import scipy.signal as sig

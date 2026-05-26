@@ -389,7 +389,6 @@ if __name__ == '__main__':
     # 打印关键信息
     print(f"\n=== 样本 {SESSION} 特征汇总 ===")
     print(f"1. 神经元数量: {len(data['spikes'])}")
-    # print(f"2. 高质量神经元数（各通道）: {data['spike_features']['good_units_per_channel']}")
     print(f"3. LFP theta功率形状: {data['lfp_features']['avg_theta_power'].shape}")
     print(f"4. LFP gamma功率形状: {data['lfp_features']['avg_gamma_power'].shape}")
     print(f"5. 特征矩阵形状: {data['feature_matrix'].shape if data['feature_matrix'] is not None else 'None'}")
