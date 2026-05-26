@@ -1,15 +1,10 @@
-import tarfile
-import numpy as np
-import pandas as pd
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Optional, List, Generator
 import logging
 from tqdm import tqdm
 import numpy as np
-from scipy import signal
 
-from load_hc3_session import load_hc3_session_full
+from pre_process.load_one_session import load_hc3_session_full
 
 
 # ====================== 你的原函数（保持不变）======================
@@ -109,31 +104,125 @@ def detect_bad_channels(data: np.ndarray, threshold=5.0):
     bad_mask = stds > np.median(stds) * threshold
     return bad_mask, stds
 
+
+import numpy as np
+import pywt
+from scipy import signal
+from scipy.fftpack import hilbert
+
+
+# ------------------------------------------------------------------------------
+# 1. STFT 短时傅里叶变换（时频分析，频率分辨率固定）
+# ------------------------------------------------------------------------------
+def compute_stft(sig, fs, nperseg=256, noverlap=128):
+    """
+    计算 STFT 时频图
+    :param sig: 一维神经信号 (LFP/EEG)
+    :param fs: 采样率
+    :param nperseg: 每段长度
+    :param noverlap: 重叠长度
+    :return: f: 频率轴, t: 时间轴, Zxx: 时频功率
+    """
+    f, t, Zxx = signal.stft(sig, fs=fs, nperseg=nperseg, noverlap=noverlap)
+    power = np.abs(Zxx) ** 2  # 取功率
+    return f, t, power
+
+
+# ------------------------------------------------------------------------------
+# 2. Morlet 小波变换（时频分析，高频时间准、低频频率准，最适合神经信号）
+# ------------------------------------------------------------------------------
+def compute_morlet_wavelet(signal, fs, freq_min=1, freq_max=100, freq_step=2, n_cycles=5):
+    """
+    PyWavelets 版 Morlet 小波时频分析
+    :param signal: 一维神经信号（LFP/EEG）
+    :param fs: 采样率
+    :param freq_min: 最低频率
+    :param freq_max: 最高频率
+    :param freq_step: 频率步长
+    :param n_cycles: 小波周期数（推荐 3~7）
+    :return: freqs: 频率轴, t: 时间轴, power: 时频功率(2D矩阵)
+    """
+
+    # === PyWavelets 核心：自动计算尺度，适配频率 ===
+    # 生成需要的频率
+    freqs = np.arange(freq_min, freq_max + 1, freq_step)
+
+    # 关键：自己计算尺度（修复报错核心）
+    # scales = pywt.scale2frequency('morl', freqs) ** -1 / fs
+    scales = (fs * 2) / freqs
+
+    # 'morl' = Morlet小波（神经信号最常用）
+    cwt_matrix, freqs_calc = pywt.cwt(
+        signal,
+        scales=scales,  # 自动计算尺度
+        wavelet='morl',  # Morlet小波
+        sampling_period=1 / fs,  # 采样周期
+        method='fft'  # 快速计算
+    )
+
+    # 时频功率（取模平方）
+    power = np.abs(cwt_matrix) ** 2
+
+    # 时间轴
+    t = np.arange(len(signal)) / fs
+
+    return freqs_calc, t, power
+
+# ------------------------------------------------------------------------------
+# 3. Hilbert 变换（提取瞬时振幅、相位、频率）
+# ------------------------------------------------------------------------------
+def compute_hilbert(signal):
+    """
+    Hilbert 变换，获取：
+    1. 瞬时相位
+    2. 瞬时振幅（包络）
+    3. 瞬时频率
+    """
+    # # 暂时不用----去除NaN
+    # valid = np.isfinite(signal)
+    # if np.any(valid):
+    #     x = np.interp(np.arange(len(signal)), np.where(valid)[0], signal[valid])
+    # else:
+    #     x = signal.copy()
+
+    # Hilbert 变换
+    analytic_signal = hilbert(signal)
+
+    # 核心输出
+    phase = np.angle(analytic_signal)  # 相位 (-π ~ π)
+    amplitude = np.abs(analytic_signal)  # 振幅包络
+    inst_freq = np.diff(np.unwrap(phase))  # 瞬时频率
+
+    # 对齐长度
+    inst_freq = np.append(inst_freq, inst_freq[-1])
+
+    return phase, amplitude, inst_freq
+
 # ====================== 使用示例 ======================
-if __name__ == '__main__':
-    BASE_PATH = "E:/crcns_hc3"  # ← 修改为你的数据集路径
-
-    # 方式1：生成器方式（推荐，节省内存）
-    print("开始批量加载...")
-    session_count = 0
-    total_units = 0
-
-    for data in load_all_sessions(
-            base_path=BASE_PATH,
-            load_lfp=True,  # 建议先不加载 LFP
-            verbose=True,
-            save_lfp=True,
-            max_sessions=1  # 设置数字可限制测试数量
-    ):
-        session_count += 1
-        n_units = len(data['spikes'])
-        total_units += n_units
-
-        print(f"\n[{session_count:03d}] {data['topdir']}/{data['session']:15s} "
-              f"→ {n_units:3d} units, "
-              f"position: {len(data['position']) if data['position'] is not None else 0}")
-
-        # 在这里可以做你的处理，例如保存到 hdf5、计算 firing rate 等
-        # lfp_process(data['lfp']['data'])
-
-    print(f"\n批量加载完成！共处理 {session_count} 个 session，总计 {total_units:,} 个神经元单元")
+# if __name__ == '__main__':
+#     BASE_PATH = "E:/crcns_hc3"  # ← 修改为你的数据集路径
+#
+#     # 方式1：生成器方式（推荐，节省内存）
+#     print("开始批量加载...")
+#     session_count = 0
+#     total_units = 0
+#
+#     for data in load_all_sessions(
+#             base_path=BASE_PATH,
+#             load_lfp=True,  # 建议先不加载 LFP
+#             verbose=True,
+#             save_lfp=True,
+#             max_sessions=1  # 设置数字可限制测试数量
+#     ):
+#         session_count += 1
+#         n_units = len(data['spikes'])
+#         total_units += n_units
+#
+#         print(f"\n[{session_count:03d}] {data['topdir']}/{data['session']:15s} "
+#               f"→ {n_units:3d} units, "
+#               f"position: {len(data['position']) if data['position'] is not None else 0}")
+#
+#         # 在这里可以做你的处理，例如保存到 hdf5、计算 firing rate 等
+#         # lfp_process(data['lfp']['data'])
+#
+#     print(f"\n批量加载完成！共处理 {session_count} 个 session，总计 {total_units:,} 个神经元单元")
